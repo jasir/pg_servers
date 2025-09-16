@@ -5,7 +5,6 @@
 
 PG_SERVERS_ROOT="$HOME/pg_servers"
 ENV_FILE="$PG_SERVERS_ROOT/.env"
-CURRENT_FILE="$PG_SERVERS_ROOT/.current_version"
 COMPOSE_FILE="$PG_SERVERS_ROOT/docker/docker-compose.yml"
 
 # Načtení environment proměnných
@@ -21,10 +20,10 @@ show_help() {
     echo "  pgctl start <verze>     - Spustí PostgreSQL kontejner"
     echo "  pgctl stop <verze>      - Zastaví PostgreSQL kontejner"
     echo "  pgctl restart <verze>   - Restartuje PostgreSQL kontejner"
-    echo "  pgctl use <verze>       - Nastaví aktivní verzi pro CLI nástroje"
+    echo ""
     echo "  pgctl status            - Zobrazí stav všech kontejnerů"
     echo "  pgctl list              - Seznam dostupných verzí"
-    echo "  pgctl current           - Aktuálně aktivní verze"
+    echo ""
     echo "  pgctl logs <verze>      - Zobrazí logy kontejneru"
     echo "  pgctl up                - Kompletní nastavení (build + start)"
     echo ""
@@ -32,7 +31,7 @@ show_help() {
     echo ""
     echo "Příklady:"
     echo "  pgctl start 9.5         # Spustí PostgreSQL 9.5 na portu 5432"
-    echo "  pgctl use 12            # Nastaví verzi 12 jako aktivní"
+    echo ""
     echo "  pgctl status            # Zobrazí běžící kontejnery"
     echo "  pgctl up                # První spuštění a build custom image"
 }
@@ -125,121 +124,8 @@ restart_container() {
     stop_container "$version" && start_container "$version"
 }
 
-# Funkce pro nastavení aktivní verze
-use_version() {
-    local version=$(normalize_version "$1")
-    local port=$(get_port "$version")
 
-    if [ "$version" = "unknown" ]; then
-        echo "❌ Neznámá verze: $1"
-        return 1
-    fi
 
-    echo "$version" > "$CURRENT_FILE"
-
-    # Vytvoření wrapperů pro psql a pg_dump
-    create_wrappers "$version" "$port"
-
-    # Nastavení environment proměnných pro aktuální session
-    export PGHOST=localhost
-    export PGPORT="$port"
-    export PGUSER=postgres
-    export PGDATABASE=postgres
-
-    echo "✅ Aktivní verze nastavena na PostgreSQL $version"
-    echo "📡 PGHOST=localhost, PGPORT=$port, PGUSER=postgres"
-    echo ""
-    echo "🔧 Vytvořeny wrappery pro PostgreSQL nástroje:"
-    echo "   • psql, pg_dump, pg_restore, pg_dumpall"
-    echo "   • createdb, dropdb, createuser, dropuser"
-    echo "   • vacuumdb, pg_isready, pg_config"
-    echo ""
-    echo "Pro trvalé nastavení přidej do ~/.bashrc:"
-    echo "export PGHOST=localhost"
-    echo "export PGPORT=$port"
-    echo "export PGUSER=postgres"
-}
-
-# Funkce pro vytvoření wrapperů
-create_wrappers() {
-    local version="$1"
-    local port="$2"
-
-    # Seznam všech PostgreSQL nástrojů pro které vytváříme wrappery
-    local tools=(
-        "psql"
-        "pg_dump"
-        "pg_restore"
-        "pg_dumpall"
-        "createdb"
-        "dropdb"
-        "createuser"
-        "dropuser"
-        "vacuumdb"
-        "pg_isready"
-        "pg_config"
-    )
-
-    # Vytvoření wrapperu pro každý nástroj
-    for tool in "${tools[@]}"; do
-        create_single_wrapper "$tool" "$version"
-    done
-
-    echo "✅ Vytvořeny wrappery pro: ${tools[*]}"
-}
-
-# Funkce pro vytvoření jednoho wrapperu
-create_single_wrapper() {
-    local tool="$1"
-    local version="$2"
-    local wrapper_file="$PG_SERVERS_ROOT/wrappers/${tool}-wrapper"
-    local symlink_file="$HOME/scripts-ai/$tool"
-
-    # Vytvoření wrapperu
-    cat > "$wrapper_file" << EOF
-#!/bin/bash
-# $tool wrapper pro PostgreSQL $version
-
-# Načtení aktuální verze
-CURRENT_VERSION="\$(cat "$PG_SERVERS_ROOT/.current_version" 2>/dev/null || echo "$version")"
-
-# Získání portu podle verze
-get_port() {
-    case "\$1" in
-        9.5) echo "5432" ;;
-        9.6) echo "5433" ;;
-        12) echo "5434" ;;
-        15) echo "5435" ;;
-        16) echo "5437" ;;
-        *) echo "5432" ;;
-    esac
-}
-
-PORT=\$(get_port "\$CURRENT_VERSION")
-
-# Speciální případy pro nástroje které nepotřebují parametry připojení
-case "$tool" in
-    pg_config)
-        docker exec -i "pg\${CURRENT_VERSION//./}" pg_config "\$@"
-        ;;
-    pg_isready)
-        docker exec -i "pg\${CURRENT_VERSION//./}" pg_isready -h localhost -p "\$PORT" "\$@"
-        ;;
-    *)
-        # Standardní nástroje s připojením k databázi
-        docker exec -i "pg\${CURRENT_VERSION//./}" $tool -h localhost -p "\$PORT" -U postgres "\$@"
-        ;;
-esac
-EOF
-
-    # Nastavení oprávnění
-    chmod +x "$wrapper_file"
-
-    # Vytvoření symlinku (pokud neexistuje)
-    if [ ! -L "$symlink_file" ]; then
-        ln -sf "$wrapper_file" "$symlink_file"
-    fi
-}
 
 # Funkce pro zobrazení statusu
 show_status() {
@@ -261,9 +147,6 @@ show_status() {
 
         printf "  PostgreSQL %-3s (port %s): %s\n" "$version" "$port" "$status"
     done
-
-    echo ""
-    echo "🎯 Aktivní verze pro CLI: $(cat "$CURRENT_FILE" 2>/dev/null || echo "nenastavena")"
 }
 
 # Funkce pro seznam verzí
@@ -279,18 +162,6 @@ list_versions() {
     echo "Použití: pgctl start <verze>"
 }
 
-# Funkce pro zobrazení aktuální verze
-show_current() {
-    local current=$(cat "$CURRENT_FILE" 2>/dev/null || echo "")
-    if [ "$current" = "" ]; then
-        echo "❌ Žádná aktivní verze není nastavena"
-        echo "Použij: pgctl use <verze>"
-    else
-        local port=$(get_port "$current")
-        echo "🎯 Aktivní verze: PostgreSQL $current"
-        echo "📡 Port: $port"
-    fi
-}
 
 # Funkce pro zobrazení logů
 show_logs() {
@@ -329,21 +200,11 @@ case "$1" in
         fi
         restart_container "$2"
         ;;
-    use)
-        if [ -z "$2" ]; then
-            echo "❌ Chybí verze. Použití: pgctl use <verze>"
-            exit 1
-        fi
-        use_version "$2"
-        ;;
     status)
         show_status
         ;;
     list)
         list_versions
-        ;;
-    current)
-        show_current
         ;;
     logs)
         if [ -z "$2" ]; then
