@@ -1,0 +1,276 @@
+#!/bin/bash
+
+# PostgreSQL Control Tool (pgctl)
+# Správa více verzí PostgreSQL přes Docker
+
+PG_SERVERS_ROOT="$HOME/pg_servers"
+ENV_FILE="$PG_SERVERS_ROOT/.env"
+CURRENT_FILE="$PG_SERVERS_ROOT/.current_version"
+COMPOSE_FILE="$PG_SERVERS_ROOT/docker/docker-compose.yml"
+
+# Načtení environment proměnných
+if [ -f "$ENV_FILE" ]; then
+    source "$ENV_FILE"
+fi
+
+# Funkce pro zobrazení nápovědy
+show_help() {
+    echo "PostgreSQL Control Tool (pgctl)"
+    echo ""
+    echo "Použití:"
+    echo "  pgctl start <verze>     - Spustí PostgreSQL kontejner"
+    echo "  pgctl stop <verze>      - Zastaví PostgreSQL kontejner"
+    echo "  pgctl restart <verze>   - Restartuje PostgreSQL kontejner"
+    echo "  pgctl use <verze>       - Nastaví aktivní verzi pro CLI nástroje"
+    echo "  pgctl status            - Zobrazí stav všech kontejnerů"
+    echo "  pgctl list              - Seznam dostupných verzí"
+    echo "  pgctl current           - Aktuálně aktivní verze"
+    echo "  pgctl logs <verze>      - Zobrazí logy kontejneru"
+    echo ""
+    echo "Dostupné verze: 9.5, 9.6, 12, 15, 16"
+    echo ""
+    echo "Příklady:"
+    echo "  pgctl start 9.5         # Spustí PostgreSQL 9.5 na portu 5432"
+    echo "  pgctl use 12            # Nastaví verzi 12 jako aktivní"
+    echo "  pgctl status            # Zobrazí běžící kontejnery"
+}
+
+# Funkce pro normalizaci verze
+normalize_version() {
+    case "$1" in
+        9.5|95) echo "9.5" ;;
+        9.6|96) echo "9.6" ;;
+        12|12.*) echo "12" ;;
+        15|15.*) echo "15" ;;
+        16|16.*) echo "16" ;;
+        *) echo "unknown" ;;
+    esac
+}
+
+# Funkce pro získání názvu kontejneru
+get_container_name() {
+    local version=$(normalize_version "$1")
+    case "$version" in
+        9.5) echo "pg95" ;;
+        9.6) echo "pg96" ;;
+        12) echo "pg12" ;;
+        15) echo "pg15" ;;
+        16) echo "pg16" ;;
+        *) echo "" ;;
+    esac
+}
+
+# Funkce pro získání portu
+get_port() {
+    local version=$(normalize_version "$1")
+    case "$version" in
+        9.5) echo "5432" ;;
+        9.6) echo "5433" ;;
+        12) echo "5434" ;;
+        15) echo "5435" ;;
+        16) echo "5437" ;;
+        *) echo "" ;;
+    esac
+}
+
+# Funkce pro start kontejneru
+start_container() {
+    local version=$(normalize_version "$1")
+    local container=$(get_container_name "$version")
+    local port=$(get_port "$version")
+
+    if [ "$container" = "" ]; then
+        echo "❌ Neznámá verze: $1"
+        echo "Dostupné verze: 9.5, 9.6, 12, 15, 16"
+        return 1
+    fi
+
+    echo "🚀 Spouštím PostgreSQL $version na portu $port..."
+
+    if ! docker compose -f "$COMPOSE_FILE" up -d "postgres${version//./}"; then
+        echo "❌ Chyba při spuštění kontejneru $container"
+        return 1
+    fi
+
+    echo "✅ PostgreSQL $version spuštěn"
+    echo "📡 Připojení: psql -h localhost -p $port -U postgres"
+}
+
+# Funkce pro stop kontejneru
+stop_container() {
+    local version=$(normalize_version "$1")
+    local container=$(get_container_name "$version")
+
+    if [ "$container" = "" ]; then
+        echo "❌ Neznámá verze: $1"
+        return 1
+    fi
+
+    echo "🛑 Zastavuji PostgreSQL $version..."
+
+    if docker compose -f "$COMPOSE_FILE" stop "postgres${version//./}"; then
+        echo "✅ PostgreSQL $version zastaven"
+    else
+        echo "❌ Chyba při zastavování kontejneru $container"
+        return 1
+    fi
+}
+
+# Funkce pro restart kontejneru
+restart_container() {
+    local version=$(normalize_version "$1")
+    echo "🔄 Restartuji PostgreSQL $version..."
+    stop_container "$version" && start_container "$version"
+}
+
+# Funkce pro nastavení aktivní verze
+use_version() {
+    local version=$(normalize_version "$1")
+    local port=$(get_port "$version")
+
+    if [ "$version" = "unknown" ]; then
+        echo "❌ Neznámá verze: $1"
+        return 1
+    fi
+
+    echo "$version" > "$CURRENT_FILE"
+
+    # Nastavení environment proměnných pro aktuální session
+    export PGHOST=localhost
+    export PGPORT="$port"
+    export PGUSER=postgres
+    export PGDATABASE=postgres
+
+    echo "✅ Aktivní verze nastavena na PostgreSQL $version"
+    echo "📡 PGHOST=localhost, PGPORT=$port, PGUSER=postgres"
+    echo ""
+    echo "Pro trvalé nastavení přidej do ~/.bashrc:"
+    echo "export PGHOST=localhost"
+    echo "export PGPORT=$port"
+    echo "export PGUSER=postgres"
+}
+
+# Funkce pro zobrazení statusu
+show_status() {
+    echo "📊 Status PostgreSQL kontejnerů:"
+    echo ""
+
+    for version in "9.5" "9.6" "12" "15" "16"; do
+        local container=$(get_container_name "$version")
+        local port=$(get_port "$version")
+        local status=""
+
+        if docker ps --format "table {{.Names}}\t{{.Status}}" | grep -q "^$container"; then
+            status="🟢 Běží"
+        elif docker ps -a --format "table {{.Names}}\t{{.Status}}" | grep -q "^$container"; then
+            status="🔴 Zastaven"
+        else
+            status="⚪ Nevytvořen"
+        fi
+
+        printf "  PostgreSQL %-3s (port %s): %s\n" "$version" "$port" "$status"
+    done
+
+    echo ""
+    echo "🎯 Aktivní verze pro CLI: $(cat "$CURRENT_FILE" 2>/dev/null || echo "nenastavena")"
+}
+
+# Funkce pro seznam verzí
+list_versions() {
+    echo "📋 Dostupné verze PostgreSQL:"
+    echo ""
+    echo "  • 9.5  (port 5432)"
+    echo "  • 9.6  (port 5433)"
+    echo "  • 12   (port 5434)"
+    echo "  • 15   (port 5435)"
+    echo "  • 16   (port 5437)"
+    echo ""
+    echo "Použití: pgctl start <verze>"
+}
+
+# Funkce pro zobrazení aktuální verze
+show_current() {
+    local current=$(cat "$CURRENT_FILE" 2>/dev/null || echo "")
+    if [ "$current" = "" ]; then
+        echo "❌ Žádná aktivní verze není nastavena"
+        echo "Použij: pgctl use <verze>"
+    else
+        local port=$(get_port "$current")
+        echo "🎯 Aktivní verze: PostgreSQL $current"
+        echo "📡 Port: $port"
+    fi
+}
+
+# Funkce pro zobrazení logů
+show_logs() {
+    local version=$(normalize_version "$1")
+    local container=$(get_container_name "$version")
+
+    if [ "$container" = "" ]; then
+        echo "❌ Neznámá verze: $1"
+        return 1
+    fi
+
+    echo "📜 Logy pro PostgreSQL $version:"
+    docker compose -f "$COMPOSE_FILE" logs -f "postgres${version//./}"
+}
+
+# Hlavní část skriptu
+case "$1" in
+    start)
+        if [ -z "$2" ]; then
+            echo "❌ Chybí verze. Použití: pgctl start <verze>"
+            exit 1
+        fi
+        start_container "$2"
+        ;;
+    stop)
+        if [ -z "$2" ]; then
+            echo "❌ Chybí verze. Použití: pgctl stop <verze>"
+            exit 1
+        fi
+        stop_container "$2"
+        ;;
+    restart)
+        if [ -z "$2" ]; then
+            echo "❌ Chybí verze. Použití: pgctl restart <verze>"
+            exit 1
+        fi
+        restart_container "$2"
+        ;;
+    use)
+        if [ -z "$2" ]; then
+            echo "❌ Chybí verze. Použití: pgctl use <verze>"
+            exit 1
+        fi
+        use_version "$2"
+        ;;
+    status)
+        show_status
+        ;;
+    list)
+        list_versions
+        ;;
+    current)
+        show_current
+        ;;
+    logs)
+        if [ -z "$2" ]; then
+            echo "❌ Chybí verze. Použití: pgctl logs <verze>"
+            exit 1
+        fi
+        show_logs "$2"
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    "")
+        show_help
+        ;;
+    *)
+        echo "❌ Neznámý příkaz: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac

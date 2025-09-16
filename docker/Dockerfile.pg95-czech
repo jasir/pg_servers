@@ -1,0 +1,38 @@
+FROM postgres:9.5
+
+# Fix Debian Stretch repositories (end of life) and remove PostgreSQL repo
+RUN rm -f /etc/apt/sources.list.d/pgdg.list && \
+    echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security stretch/updates main" >> /etc/apt/sources.list && \
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99ignore-valid-until
+
+# Install locales package
+RUN apt-get update && apt-get install -y locales && rm -rf /var/lib/apt/lists/*
+
+# Add Czech locales to locale.gen
+RUN echo "cs_CZ.UTF-8 UTF-8" >> /etc/locale.gen && \
+    echo "cs_CZ.CP1250 CP1250" >> /etc/locale.gen && \
+    echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+
+# Generate locales
+RUN locale-gen cs_CZ.UTF-8 cs_CZ.CP1250 en_US.UTF-8
+
+# Try alternative approach with localedef for CP1250
+RUN localedef -i cs_CZ -c -f CP1250 -A /usr/share/locale/locale.alias cs_CZ.CP1250 || true
+
+# Create alias for Czech_Czechia.1250 to match Windows naming
+RUN echo "czech_czechia.1250 cs_CZ.CP1250" >> /usr/share/locale/locale.alias
+RUN echo "Czech_Czechia.1250 cs_CZ.CP1250" >> /usr/share/locale/locale.alias
+
+# Set environment variables
+ENV LANG=cs_CZ.CP1250
+ENV LC_ALL=cs_CZ.CP1250
+ENV LC_COLLATE=cs_CZ.CP1250
+ENV LC_CTYPE=cs_CZ.CP1250
+ENV LC_MESSAGES=en_US.UTF-8
+ENV LC_MONETARY=cs_CZ.CP1250
+ENV LC_NUMERIC=cs_CZ.CP1250
+ENV LC_TIME=cs_CZ.CP1250
+
+# Verify locales are available (for debugging)
+RUN locale -a | grep -i czech || echo "Czech locale not found, but continuing..."

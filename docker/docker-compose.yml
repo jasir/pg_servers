@@ -1,0 +1,157 @@
+services:
+  # PostgreSQL 9.5
+  postgres95:
+    image: postgres-czech:9.5
+    container_name: pg95
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_95:-postgres}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - /home/jarda/pg_servers/versions/9.5/data:/var/lib/postgresql/data
+      - /home/jarda/pg_servers/versions/9.5/logs:/var/log/postgresql
+    networks:
+      - pg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL 9.6
+  postgres96:
+    image: postgres:9.6
+    container_name: pg96
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_96:-postgres}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - /home/jarda/pg_servers/versions/9.6/data:/var/lib/postgresql/data
+      - /home/jarda/pg_servers/versions/9.6/logs:/var/log/postgresql
+    networks:
+      - pg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL 12
+  postgres12:
+    image: postgres:12
+    container_name: pg12
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_12:-postgres}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - /home/jarda/pg_servers/versions/12/data:/var/lib/postgresql/data
+      - /home/jarda/pg_servers/versions/12/logs:/var/log/postgresql
+    networks:
+      - pg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL 15
+  postgres15:
+    image: postgres:15
+    container_name: pg15
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_15:-postgres}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - /home/jarda/pg_servers/versions/15/data:/var/lib/postgresql/data
+      - /home/jarda/pg_servers/versions/15/logs:/var/log/postgresql
+    networks:
+      - pg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # PostgreSQL 16
+  postgres16:
+    image: postgres:16
+    container_name: pg16
+    restart: unless-stopped
+    ports:
+      - "5437:5432"
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_16:-postgres}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - /home/jarda/pg_servers/versions/16/data:/var/lib/postgresql/data
+      - /home/jarda/pg_servers/versions/16/logs:/var/log/postgresql
+    networks:
+      - pg_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  pg95_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/jarda/pg_servers/versions/9.5/data
+  pg96_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/jarda/pg_servers/versions/9.6/data
+  pg12_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/jarda/pg_servers/versions/12/data
+  pg15_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/jarda/pg_servers/versions/15/data
+  pg16_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/jarda/pg_servers/versions/16/data
+
+networks:
+  pg_network:
+    driver: bridge
+    name: postgresql_network

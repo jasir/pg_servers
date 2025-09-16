@@ -1,0 +1,106 @@
+# PostgreSQL data and logs
+versions/*/data/
+versions/*/logs/
+versions/9.5/data/*
+versions/9.5/logs/*
+versions/9.6/data/*
+versions/9.6/logs/*
+versions/12/data/*
+versions/12/logs/*
+versions/15/data/*
+versions/15/logs/*
+versions/16/data/*
+versions/16/logs/*
+
+# Environment variables with passwords
+.env
+
+# Current version tracking
+.current_version
+
+# Docker artifacts
+.dockerignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Backup files
+backups/*
+!backups/.gitkeep
+
+# Node modules (if any utility scripts)
+node_modules/
+
+# Python cache (if any utility scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# PostgreSQL specific
+*.conf
+*.pid
+*.postmaster.pid
+
+# Docker volumes and temporary data
+*.db
+*.sqlite
+*.sqlite3
+
+# Test files
+test/
+tests/
+*.test.js
+*.test.py
+
+# Documentation build
+docs/_build/
+site/
+
+# Local development overrides
+docker-compose.override.yml
+
+# Secret files
+*.key
+*.pem
+*.crt
+*.csr
+secrets/
+
+# Database dumps (unless specifically versioned)
+*.dump
+*.sqlc
+*.backup
+
+# System-specific files
+*.log.*
+*.lck
+*.lock
