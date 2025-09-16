@@ -1,173 +1,173 @@
 # pgctl - PostgreSQL Multi-Version Manager
 
-🚀 **pgctl** je nástroj pro správu více verzí PostgreSQL na jednom systému pomocí Docker kontejnerů. Umožňuje snadné přepínání mezi různými verzemi PostgreSQL pro vývoj, testování a produkci.
+🚀 **pgctl** is a tool for managing multiple PostgreSQL versions on a single system using Docker containers. It allows easy switching between different PostgreSQL versions for development, testing, and production.
 
-## ✨ Funkce
+## ✨ Features
 
-- 🔄 **Správa více verzí** - PostgreSQL 9.5, 9.6, 12, 15, 16
-- 🐳 **Docker kontejnery** - Izolované prostředí pro každou verzi
-- 🔀 **Snadné přepínání** - `pgctl use <verze>` pro změnu aktivní verze
-- 📊 **Status monitoring** - Přehled běžících kontejnerů
-- 💾 **Persistentní data** - Data a konfigurace uloženy na host systému
-- 🔐 **.pgpass integrace** - Centralizovaná správa hesel
-- 🌐 **Různé porty** - Každá verze na vlastním portu
-- 🔧 **PostgreSQL wrappery** - Automatické wrappery pro všechny CLI nástroje
-- 🚀 **Globální dostupnost** - Všechny nástroje dostupné v systémovém PATH
-- 📋 **Kompletní sada nástrojů** - psql, pg_dump, pg_restore, pg_dumpall, createdb, dropdb, createuser, dropuser, vacuumdb, pg_isready, pg_config
+- 🔄 **Multi-version management** - PostgreSQL 9.5, 9.6, 12, 15, 16
+- 🐳 **Docker containers** - Isolated environments for each version
+- 🔀 **Easy switching** - `pgctl use <version>` to change active version
+- 📊 **Status monitoring** - Overview of running containers
+- 💾 **Persistent data** - Data and configuration stored on host system
+- 🔐 **.pgpass integration** - Centralized password management
+- 🌐 **Different ports** - Each version on its own port
+- 🔧 **PostgreSQL wrappers** - Automatic wrappers for all CLI tools
+- 🚀 **Global availability** - All tools available in system PATH
+- 📋 **Complete toolset** - psql, pg_dump, pg_restore, pg_dumpall, createdb, dropdb, createuser, dropuser, vacuumdb, pg_isready, pg_config
 
-## 📋 Podporované verze
+## 📋 Supported Versions
 
-| Verze | Port | Popis |
-|-------|------|--------|
-| 9.5   | 5432 | Legacy verze s Windows daty |
-| 9.6   | 5433 | Stabilní verze |
-| 12    | 5434 | LTS verze |
-| 15    | 5435 | Moderní verze |
-| 16    | 5437 | Nejnovější verze |
+| Version | Port | Description |
+|---------|------|-------------|
+| 9.5     | 5432 | Legacy version with Windows data |
+| 9.6     | 5433 | Stable version |
+| 12      | 5434 | LTS version |
+| 15      | 5435 | Modern version |
+| 16      | 5437 | Latest version |
 
-## 🚀 Instalace
+## 🚀 Installation
 
-1. **Klonování repozitáře:**
+1. **Clone the repository:**
    ```bash
    cd ~/pg_servers
    git clone <repo-url>
    ```
 
-2. **Symbolický odkaz na pgctl:**
+2. **Create symbolic link for pgctl:**
    ```bash
    ln -s ~/pg_servers/scripts-ai/pgctl ~/scripts-ai/pgctl
    ```
 
-3. **Nastavení práv:**
+3. **Set permissions:**
    ```bash
    chmod +x ~/scripts-ai/pgctl
    ```
 
-## 🎮 Použití
+## 🎮 Usage
 
-### Základní příkazy
+### Basic Commands
 
 ```bash
-# Zobrazení nápovědy
+# Show help
 pgctl help
 
-# Seznam dostupných verzí
+# List available versions
 pgctl list
 
-# Spuštění konkrétní verze
+# Start specific version
 pgctl start 9.6
 pgctl start 12
 pgctl start 15
 
-# Zastavení verze
+# Stop version
 pgctl stop 9.6
 
-# Restart verze
+# Restart version
 pgctl restart 12
 
-# Nastavení aktivní verze
+# Set active version
 pgctl use 15
 
-# Zobrazení stavu všech kontejnerů
+# Show status of all containers
 pgctl status
 
-# Zobrazení aktuální verze
+# Show current version
 pgctl current
 
-# Zobrazení logů
+# Show logs
 pgctl logs 16
 ```
 
-### PostgreSQL Wrappery
+### PostgreSQL Wrappers
 
-Po spuštění `pgctl use <verze>` se automaticky vytvoří wrappery pro všechny PostgreSQL nástroje:
+After running `pgctl use <version>`, wrappers are automatically created for all PostgreSQL tools:
 
 ```bash
-# Základní nástroje (fungují s aktivní verzí)
-psql --version                    # Zobrazí verzi aktivního PostgreSQL
-pg_dump -h localhost -U postgres  # Backup databáze
-pg_restore -h localhost -U postgres # Obnova backupu
-pg_dumpall -h localhost -U postgres # Backup všech databází
+# Basic tools (work with active version)
+psql --version                    # Show active PostgreSQL version
+pg_dump -h localhost -U postgres  # Database backup
+pg_restore -h localhost -U postgres # Restore backup
+pg_dumpall -h localhost -U postgres # Backup all databases
 
-# Správa databází
-createdb test_db                  # Vytvoření databáze
-dropdb test_db                    # Smazání databáze
-createuser new_user               # Vytvoření uživatele
-dropuser old_user                 # Smazání uživatele
-vacuumdb -d test_db -v            # Optimalizace databáze
+# Database management
+createdb test_db                  # Create database
+dropdb test_db                    # Delete database
+createuser new_user               # Create user
+dropuser old_user                 # Delete user
+vacuumdb -d test_db -v            # Database optimization
 
-# Monitorovací nástroje
-pg_isready                        # Kontrola dostupnosti
-pg_config --version               # Informace o konfiguraci
+# Monitoring tools
+pg_isready                        # Check availability
+pg_config --version               # Configuration information
 
-# Všechny wrappery automaticky používají:
-# - Správný port podle aktivní verze
-# - Správný container (pg95, pg96, pg12, pg15, pg16)
-# - Standardní přihlašovací údaje (postgres)
+# All wrappers automatically use:
+# - Correct port based on active version
+# - Correct container (pg95, pg96, pg12, pg15, pg16)
+# - Standard credentials (postgres)
 ```
 
-### Přepínání mezi verzemi
+### Switching Between Versions
 
 ```bash
-# Přepnutí na PostgreSQL 12
+# Switch to PostgreSQL 12
 pgctl use 12
 
-# Přepnutí na PostgreSQL 16
+# Switch to PostgreSQL 16
 pgctl use 16
 
-# Ověření aktivní verze
+# Verify active version
 pgctl current
 ```
 
-## 📁 Struktura projektu
+## 📁 Project Structure
 
 ```
 ~/pg_servers/
-├── README.md                 # Tento soubor
-├── .current_version          # Aktuálně aktivní verze
-├── .env                      # Environment proměnné
-├── .pgpass                   # Hesla pro všechny verze
-├── docker/                   # Docker konfigurace
-│   ├── docker-compose.yml    # Hlavní konfigurace
+├── README.md                 # This file
+├── .current_version          # Currently active version
+├── .env                      # Environment variables
+├── .pgpass                   # Passwords for all versions
+├── docker/                   # Docker configuration
+│   ├── docker-compose.yml    # Main configuration
 │   └── Dockerfile.*          # Custom Docker images
-├── versions/                 # Data pro každou verzi
+├── versions/                 # Data for each version
 │   ├── 9.5/
-│   │   ├── data/            # Databázová data
-│   │   ├── config/          # Konfigurační soubory
-│   │   └── logs/            # Log soubory
+│   │   ├── data/            # Database data
+│   │   ├── config/          # Configuration files
+│   │   └── logs/            # Log files
 │   ├── 9.6/
 │   ├── 12/
 │   ├── 15/
 │   └── 16/
-├── scripts/                  # Skripty a utility
-└── backups/                  # Zálohy
+├── scripts/                  # Scripts and utilities
+└── backups/                  # Backups
 
-### 📁 Wrappery a skripty
+### 📁 Wrappers and Scripts
 
 ```
-~/scripts-ai/                      # Adresář v PATH
-├── pgctl                         # Hlavní kontrolní skript
-├── psql -> psql-wrapper           # Symlink na wrapper
-├── pg_dump -> pg_dump-wrapper     # Symlink na wrapper
-├── pg_restore -> pg_restore-wrapper # Symlink na wrapper
-├── pg_dumpall -> pg_dumpall-wrapper # Symlink na wrapper
-├── createdb -> createdb-wrapper   # Symlink na wrapper
-├── dropdb -> dropdb-wrapper       # Symlink na wrapper
-├── createuser -> createuser-wrapper # Symlink na wrapper
-├── dropuser -> dropuser-wrapper   # Symlink na wrapper
-├── vacuumdb -> vacuumdb-wrapper   # Symlink na wrapper
-├── pg_isready -> pg_isready-wrapper # Symlink na wrapper
-├── pg_config -> pg_config-wrapper # Symlink na wrapper
-└── *-wrapper                     # Wrapper skripty (automaticky generované)
+~/scripts-ai/                      # Directory in PATH
+├── pgctl                         # Main control script
+├── psql -> psql-wrapper           # Symlink to wrapper
+├── pg_dump -> pg_dump-wrapper     # Symlink to wrapper
+├── pg_restore -> pg_restore-wrapper # Symlink to wrapper
+├── pg_dumpall -> pg_dumpall-wrapper # Symlink to wrapper
+├── createdb -> createdb-wrapper   # Symlink to wrapper
+├── dropdb -> dropdb-wrapper       # Symlink to wrapper
+├── createuser -> createuser-wrapper # Symlink to wrapper
+├── dropuser -> dropuser-wrapper   # Symlink to wrapper
+├── vacuumdb -> vacuumdb-wrapper   # Symlink to wrapper
+├── pg_isready -> pg_isready-wrapper # Symlink to wrapper
+├── pg_config -> pg_config-wrapper # Symlink to wrapper
+└── *-wrapper                     # Wrapper scripts (automatically generated)
 ```
 
-## 🔧 Konfigurace
+## 🔧 Configuration
 
-### Environment proměnné
+### Environment Variables
 
-Soubor `~/.pg_servers/.env` obsahuje:
+The `~/.pg_servers/.env` file contains:
 ```bash
-# Hesla pro jednotlivé verze
+# Passwords for individual versions
 POSTGRES_PASSWORD_95=your_password_95
 POSTGRES_PASSWORD_96=your_password_96
 POSTGRES_PASSWORD_12=your_password_12
@@ -175,9 +175,9 @@ POSTGRES_PASSWORD_15=your_password_15
 POSTGRES_PASSWORD_16=your_password_16
 ```
 
-### .pgpass soubor
+### .pgpass File
 
-Pro automatické přihlašování:
+For automatic login:
 ```
 localhost:5432:*:postgres:password_95
 localhost:5433:*:postgres:password_96
@@ -186,195 +186,195 @@ localhost:5435:*:postgres:password_15
 localhost:5437:*:postgres:password_16
 ```
 
-## 🐳 Docker konfigurace
+## 🐳 Docker Configuration
 
-Každá verze má svůj vlastní kontejner s:
-- Vlastním portem
-- Persistentním úložištěm dat
-- Health checkem
-- Automatickým restartem
+Each version has its own container with:
+- Own port
+- Persistent data storage
+- Health check
+- Automatic restart
 
-### Vlastní porty
+### Custom Ports
 
-- **PostgreSQL 9.5**: `5432` (výchozí)
+- **PostgreSQL 9.5**: `5432` (default)
 - **PostgreSQL 9.6**: `5433`
 - **PostgreSQL 12**: `5434`
 - **PostgreSQL 15**: `5435`
 - **PostgreSQL 16**: `5437`
 
-## 🌐 Připojení k databázím
+## 🌐 Database Connections
 
-### Pomocí PostgreSQL wrappery (doporučené)
+### Using PostgreSQL Wrappers (Recommended)
 
 ```bash
-# Nastavení verze a automatické wrappery
+# Set version and automatic wrappers
 pgctl use 12
 
-# Připojení k aktivní verzi pomocí wrapperu
-psql -U postgres                    # Automaticky použije port 5434
+# Connect to active version using wrapper
+psql -U postgres                    # Automatically uses port 5434
 
-# Připojení s jiným uživatelem/databází
+# Connect with different user/database
 psql -U myuser -d mydb
 
-# Všechny wrappery fungují stejně:
+# All wrappers work the same:
 pg_dump -U postgres > backup.sql
 pg_restore -U postgres -d mydb backup.sql
 createdb -U postgres my_database
 ```
 
-### Přímé připojení (manuální specifikace portu)
+### Direct Connection (Manual Port Specification)
 
 ```bash
-# Připojení ke konkrétní verzi
+# Connect to specific version
 psql -h localhost -p 5434 -U postgres  # PostgreSQL 12
 psql -h localhost -p 5437 -U postgres  # PostgreSQL 16
 ```
 
-### Pomocí pgctl
+### Using pgctl
 
 ```bash
-# Nastavení verze a připojení
+# Set version and connect
 pgctl use 12
-psql -h localhost -U postgres        # Port se nastaví automaticky
+psql -h localhost -U postgres        # Port is set automatically
 ```
 
 ## 📊 Monitoring
 
-### Status kontejnerů
+### Container Status
 
 ```bash
 pgctl status
 ```
 
-Výstup:
+Output:
 ```
-📊 Status PostgreSQL kontejnerů:
+📊 PostgreSQL Container Status:
 
-  PostgreSQL 9.5 (port 5432): 🟢 Běží
-  PostgreSQL 9.6 (port 5433): 🟢 Běží
-  PostgreSQL 12  (port 5434): 🟢 Běží
-  PostgreSQL 15  (port 5435): 🟢 Běží
-  PostgreSQL 16  (port 5437): 🟢 Běží
+  PostgreSQL 9.5 (port 5432): 🟢 Running
+  PostgreSQL 9.6 (port 5433): 🟢 Running
+  PostgreSQL 12  (port 5434): 🟢 Running
+  PostgreSQL 15  (port 5435): 🟢 Running
+  PostgreSQL 16  (port 5437): 🟢 Running
 
-🎯 Aktivní verze pro CLI: 12
+🎯 Active CLI version: 12
 ```
 
-### Logy
+### Logs
 
 ```bash
-# Zobrazení logů pro verzi
+# Show logs for version
 pgctl logs 15
 
-# Sledování logů v reálném čase
+# Follow logs in real time
 pgctl logs 16
 ```
 
 ## 🔧 Troubleshooting
 
-### Běžné problémy
+### Common Issues
 
-1. **Kontejner neběží:**
+1. **Container not running:**
    ```bash
    pgctl status
-   pgctl restart <verze>
+   pgctl restart <version>
    ```
 
-2. **Problém s porty:**
+2. **Port issues:**
    ```bash
-   # Zkontroluj obsazené porty
+   # Check occupied ports
    netstat -tlnp | grep 543
    ```
 
-3. **Problém s připojením:**
+3. **Connection problems:**
    ```bash
-   # Ověř .pgpass soubor
+   # Check .pgpass file
    cat ~/.pgpass
 
-   # Ověř aktivní verzi
+   # Check active version
    pgctl current
    ```
 
-### Čištění
+### Cleanup
 
 ```bash
-# Zastavení všech kontejnerů
+# Stop all containers
 cd ~/pg_servers/docker
 docker compose down
 
-# Odstranění kontejnerů a volumes
+# Remove containers and volumes
 docker compose down -v
 
-# Zobrazení Docker images
+# Show Docker images
 docker images | grep postgres
 ```
 
-## 🔄 Migration dat
+## 🔄 Data Migration
 
-### Z Windows
+### From Windows
 
-Pokud migrujete data z Windows PostgreSQL:
+If migrating data from Windows PostgreSQL:
 
-1. **Záloha dat na Windows:**
+1. **Backup data on Windows:**
    ```bash
    pg_dump -h localhost -p 5432 -U postgres database_name > backup.sql
    ```
 
-2. **Obnovení na Linux:**
+2. **Restore on Linux:**
    ```bash
    pgctl use 9.5
    createdb -h localhost -p 5432 -U postgres database_name
    psql -h localhost -p 5432 -U postgres database_name < backup.sql
    ```
 
-## 🛠️ Vývoj a údržba
+## 🛠️ Development and Maintenance
 
-### Přidání nové verze
+### Adding New Version
 
-1. **Vytvoření adresářové struktury:**
+1. **Create directory structure:**
    ```bash
    mkdir -p ~/pg_servers/versions/X.Y/{config,data,logs}
    ```
 
-2. **Aktualizace docker-compose.yml**
-3. **Aktualizace pgctl skriptu**
-4. **Testování nové verze**
+2. **Update docker-compose.yml**
+3. **Update pgctl script**
+4. **Test new version**
 
-### Aktualizace pgctl
+### Updating pgctl
 
-1. **Editace souboru:**
+1. **Edit file:**
    ```bash
    nano ~/scripts-ai/pgctl
    ```
 
-2. **Testování změn:**
+2. **Test changes:**
    ```bash
    pgctl list
    pgctl status
    ```
 
-## 📝 Požadavky
+## 📝 Requirements
 
-- **Docker** a **Docker Compose**
+- **Docker** and **Docker Compose**
 - **bash** shell
-- **PATH** obsahující `~/scripts-ai/`
-- Uživatel ve `docker` skupině
-- Systémový **psql** klient by neměl být nainstalován (používají se wrappery)
+- **PATH** containing `~/scripts-ai/`
+- User in `docker` group
+- System **psql** client should not be installed (wrappers are used)
 
 ## 🤝 Contributing
 
-1. Fork repozitáře
-2. Vytvoř feature branch
-3. Commit změny
-4. Push na branch
-5. Vytvoř Pull Request
+1. Fork the repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Create Pull Request
 
-## 📄 Licence
+## 📄 License
 
-Tento projekt je dostupný pod MIT licencí.
+This project is available under the MIT license.
 
-## 🙏 Poděkování
+## 🙏 Acknowledgments
 
-Tento nástroj byl inspirován potřebou jednoduché správy více PostgreSQL verzí pro vývojové a testovací prostředí.
+This tool was inspired by the need for simple management of multiple PostgreSQL versions for development and testing environments.
 
 ---
 

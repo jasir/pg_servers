@@ -1,93 +1,93 @@
 # CHANGELOG - pgctl PostgreSQL Multi-Version Manager
 
-Všechny změny v tomto projektu jsou zdokumentovány v tomto souboru.
+All changes to this project are documented in this file.
 
-Formát této dokumentace je založen na [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-a tento projekt se řídí [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format of this document is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [2.0.0] - 2025-09-16
 
-### Přidané
-- **Kompletní sada PostgreSQL wrapperů** - Automatické wrappery pro všechny CLI nástroje:
-  - `pg_restore` - pro obnovu backupů
-  - `pg_dumpall` - pro backup všech databází
-  - `createdb` / `dropdb` - správa databází
-  - `createuser` / `dropuser` - správa uživatelů
-  - `vacuumdb` - optimalizace databází
-  - `pg_isready` - kontrola dostupnosti
-  - `pg_config` - informace o konfiguraci
-- **Generický wrapper systém** - Nová architektura pro snadné přidávání dalších nástrojů
-- **Dynamická správa verzí** - Wrappery automaticky používají aktuálně nastavenou verzi
-- **Automatické symlinkování** - Všechny wrappery jsou dostupné v systémovém PATH
-- **Speciální případy podpory** - Optimalizované volání pro `pg_config` a `pg_isready`
+### Added
+- **Complete PostgreSQL wrapper set** - Automatic wrappers for all CLI tools:
+  - `pg_restore` - for backup restoration
+  - `pg_dumpall` - for backing up all databases
+  - `createdb` / `dropdb` - database management
+  - `createuser` / `dropuser` - user management
+  - `vacuumdb` - database optimization
+  - `pg_isready` - availability checking
+  - `pg_config` - configuration information
+- **Generic wrapper system** - New architecture for easy addition of more tools
+- **Dynamic version management** - Wrappers automatically use currently set version
+- **Automatic symlinking** - All wrappers available in system PATH
+- **Special case support** - Optimized calls for `pg_config` and `pg_isready`
 
-### Změněné
-- **Refaktorována create_wrappers funkce** - Přechod na generický systém pro všechny nástroje
-- **Vylepšený pgctl use** - Nyní vytváří wrappery pro všechny nástroje najednou
-- **Aktualizovaná dokumentace** - Rozšířeno README.md o nové wrappery a funkce
+### Changed
+- **Refactored create_wrappers function** - Transitioned to generic system for all tools
+- **Enhanced pgctl use** - Now creates wrappers for all tools at once
+- **Updated documentation** - Expanded README.md with new wrappers and features
 
-### Odstraněné
-- **Systémový psql klient** - Odebrán konfliktní systémový PostgreSQL klient
-- **Duplicitní kód** - Zjednodušena implementace wrapperů
+### Removed
+- **System psql client** - Removed conflicting system PostgreSQL client
+- **Duplicate code** - Simplified wrapper implementation
 
-### Opravené
-- **Problém s přepínáním verzí** - Wrappery nyní spolehlivě používají aktuální verzi
-- **Chyby v symlinkování** - Opraveny problémy s vytvářením symbolických odkazů
+### Fixed
+- **Version switching issues** - Wrappers now reliably use current version
+- **Symlinking errors** - Fixed problems with symbolic link creation
 
 ## [1.1.0] - 2025-09-15
 
-### Přidané
-- **Základní wrappery** - Implementovány wrappery pro `psql` a `pg_dump`
-- **Dynamické verze** - Wrappery automaticky používají nastavenou verzi PostgreSQL
-- **Automatická správa symlinků** - Vytváření symbolických odkazů v ~/scripts-ai/
-- **Environment proměnné** - Automatické nastavení PGHOST, PGPORT, PGUSER při `pgctl use`
+### Added
+- **Basic wrappers** - Implemented wrappers for `psql` and `pg_dump`
+- **Dynamic versions** - Wrappers automatically use set PostgreSQL version
+- **Automatic symlink management** - Creating symbolic links in ~/scripts-ai/
+- **Environment variables** - Automatic setting of PGHOST, PGPORT, PGUSER with `pgctl use`
 
-### Změněné
-- **Vylepšený pgctl use** - Přidána podpora pro vytváření wrapperů
+### Changed
+- **Enhanced pgctl use** - Added support for wrapper creation
 
 ## [1.0.0] - 2025-09-14
 
-### Přidané
-- **Základní pgctl funkcionalita** - Správa PostgreSQL kontejnerů
-- **Podpora verzí 9.5, 9.6, 12, 15, 16** - Kompletní pokrytí požadovaných verzí
-- **Docker Compose konfigurace** - Izolované kontejnery pro každou verzi
-- **Status monitoring** - Přehled běžících kontejnerů a aktivní verze
-- **Port mapping** - Každá verze na vlastním portu (5432-5437)
-- **Persistentní data** - Data a konfigurace uložena na host systému
-- **.pgpass integrace** - Centralizovaná správa hesel
-- **Základní CLI příkazy** - start, stop, restart, use, status, list, logs
+### Added
+- **Basic pgctl functionality** - PostgreSQL container management
+- **Version support 9.5, 9.6, 12, 15, 16** - Complete coverage of required versions
+- **Docker Compose configuration** - Isolated containers for each version
+- **Status monitoring** - Overview of running containers and active version
+- **Port mapping** - Each version on its own port (5432-5437)
+- **Persistent data** - Data and configuration stored on host system
+- **.pgpass integration** - Centralized password management
+- **Basic CLI commands** - start, stop, restart, use, status, list, logs
 
 ---
 
-## Formát changelogu
+## Changelog Format
 
-Příspěvky do changelogu se očekávají v následujícím formátu:
+Contributions to changelog are expected in the following format:
 
 ```
-## [X.Y.Z] - RRRR-MM-DD
+## [X.Y.Z] - YYYY-MM-DD
 
-### Přidané
-- Nová funkce
-- Další nová funkce
+### Added
+- New feature
+- Another new feature
 
-### Změněné
-- Změněná funkce
-- Další změněná funkce
+### Changed
+- Changed feature
+- Another changed feature
 
-### Odstraněné
-- Odstraněná funkce
+### Removed
+- Removed feature
 
-### Opravené
-- Oprava chyby
-- Další oprava
+### Fixed
+- Bug fix
+- Another fix
 
-### Bezpečnostní
-- Bezpečnostní oprava
+### Security
+- Security fix
 ```
 
-### Typy změn
-- **Přidané** pro nové funkce
-- **Změněné** pro změny stávajících funkcí
-- **Odstraněné** pro odstraněné funkce
-- **Opravené** pro bug opravy
-- **Bezpečnostní** pro bezpečnostní opravy
+### Types of Changes
+- **Added** for new features
+- **Changed** for changes to existing features
+- **Removed** for removed features
+- **Fixed** for bug fixes
+- **Security** for security fixes
