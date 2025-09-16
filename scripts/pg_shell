@@ -1,0 +1,63 @@
+#!/bin/bash
+# PostgreSQL Shell Function Setup
+# Přidej tento soubor do ~/.bashrc nebo ~/.zshrc:
+# source ~/pg_servers/scripts/pg_shell
+
+# Funkce pro přepnutí PostgreSQL verze v aktuálním shellu
+pguse() {
+    local version="$1"
+    local pg_servers_root="$HOME/pg_servers"
+
+    if [ -z "$version" ]; then
+        echo "❌ Chybí verze. Použití: pguse <verze>"
+        echo "Dostupné verze:"
+        for dir in /usr/lib/postgresql/*; do
+            if [ -d "$dir/bin" ]; then
+                echo "  • $(basename "$dir")"
+            fi
+        done
+        return 1
+    fi
+
+    local pg_path="/usr/lib/postgresql/$version/bin"
+
+    if [ ! -d "$pg_path" ]; then
+        echo "❌ PostgreSQL $version není nainstalován"
+        echo "Spusťte: $pg_servers_root/scripts/pgctl install"
+        return 1
+    fi
+
+    # Odebrání všech PostgreSQL binárek z PATH
+    export PATH=$(echo "$PATH" | sed 's|:/usr/lib/postgresql/[^/]*/bin||g')
+
+    # Přidání požadované verze na začátek PATH
+    export PATH="$pg_path:$PATH"
+
+    echo "✅ PostgreSQL $version aktivní v aktuálním shellu"
+    echo "📍 PATH: $pg_path"
+    echo "🔍 Verze psql: $(psql --version | head -1)"
+}
+
+# Alias pro pgctl use (pro zpětnou kompatibilitu)
+alias pgswitch='pguse'
+
+# Funkce pro zobrazení aktuální PostgreSQL verze
+pgwhich() {
+    local psql_path=$(which psql 2>/dev/null)
+    if [ -n "$psql_path" ]; then
+        local version=$(psql --version | head -1)
+        echo "🐘 $version"
+        echo "📍 $psql_path"
+    else
+        echo "❌ PostgreSQL klient není v PATH"
+    fi
+}
+
+# Automatické načtení naposledy použité verze (volitelné)
+# Pokud existuje soubor s poslední verzí, načti ji
+if [ -f "$pg_servers_root/.last_pg_version" ]; then
+    last_version=$(cat "$pg_servers_root/.last_pg_version")
+    if [ -n "$last_version" ] && [ -d "/usr/lib/postgresql/$last_version/bin" ]; then
+        pguse "$last_version" > /dev/null 2>&1
+    fi
+fi
