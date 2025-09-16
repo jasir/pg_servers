@@ -104,3 +104,4 @@ secrets/
 *.log.*
 *.lck
 *.lock
+.current_version

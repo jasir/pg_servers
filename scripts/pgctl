@@ -135,6 +135,9 @@ use_version() {
 
     echo "$version" > "$CURRENT_FILE"
 
+    # Vytvoření wrapperů pro psql a pg_dump
+    create_wrappers "$version" "$port"
+
     # Nastavení environment proměnných pro aktuální session
     export PGHOST=localhost
     export PGPORT="$port"
@@ -144,10 +147,85 @@ use_version() {
     echo "✅ Aktivní verze nastavena na PostgreSQL $version"
     echo "📡 PGHOST=localhost, PGPORT=$port, PGUSER=postgres"
     echo ""
+    echo "🔧 Vytvořeny wrappery pro psql a pg_dump"
+    echo "   • psql -> ~/scripts-ai/psql-wrapper"
+    echo "   • pg_dump -> ~/scripts-ai/pg_dump-wrapper"
+    echo ""
     echo "Pro trvalé nastavení přidej do ~/.bashrc:"
     echo "export PGHOST=localhost"
     echo "export PGPORT=$port"
     echo "export PGUSER=postgres"
+}
+
+# Funkce pro vytvoření wrapperů
+create_wrappers() {
+    local version="$1"
+    local port="$2"
+
+    # Wrapper pro psql
+    cat > "$HOME/scripts-ai/psql-wrapper" << EOF
+#!/bin/bash
+# psql wrapper pro PostgreSQL $version
+
+# Načtení aktuální verze
+CURRENT_VERSION="\$(cat "$HOME/pg_servers/.current_version" 2>/dev/null || echo "$version")"
+
+# Získání portu podle verze
+get_port() {
+    case "\$1" in
+        9.5) echo "5432" ;;
+        9.6) echo "5433" ;;
+        12) echo "5434" ;;
+        15) echo "5435" ;;
+        16) echo "5437" ;;
+        *) echo "5432" ;;
+    esac
+}
+
+PORT=\$(get_port "\$CURRENT_VERSION")
+
+# Spuštění psql v kontejneru
+docker exec -i "pg\${CURRENT_VERSION//./}" psql -h localhost -p "\$PORT" -U postgres "\$@"
+EOF
+
+    # Wrapper pro pg_dump
+    cat > "$HOME/scripts-ai/pg_dump-wrapper" << EOF
+#!/bin/bash
+# pg_dump wrapper pro PostgreSQL $version
+
+# Načtení aktuální verze
+CURRENT_VERSION="\$(cat "$HOME/pg_servers/.current_version" 2>/dev/null || echo "$version")"
+
+# Získání portu podle verze
+get_port() {
+    case "\$1" in
+        9.5) echo "5432" ;;
+        9.6) echo "5433" ;;
+        12) echo "5434" ;;
+        15) echo "5435" ;;
+        16) echo "5437" ;;
+        *) echo "5432" ;;
+    esac
+}
+
+PORT=\$(get_port "\$CURRENT_VERSION")
+
+# Spuštění pg_dump v kontejneru
+docker exec -i "pg\${CURRENT_VERSION//./}" pg_dump -h localhost -p "\$PORT" -U postgres "\$@"
+EOF
+
+    # Nastavení oprávnění
+    chmod +x "$HOME/scripts-ai/psql-wrapper"
+    chmod +x "$HOME/scripts-ai/pg_dump-wrapper"
+
+    # Vytvoření symlinků v PATH (pokud neexistují)
+    if [ ! -L "$HOME/scripts-ai/psql" ]; then
+        ln -sf "$HOME/scripts-ai/psql-wrapper" "$HOME/scripts-ai/psql"
+    fi
+
+    if [ ! -L "$HOME/scripts-ai/pg_dump" ]; then
+        ln -sf "$HOME/scripts-ai/pg_dump-wrapper" "$HOME/scripts-ai/pg_dump"
+    fi
 }
 
 # Funkce pro zobrazení statusu
