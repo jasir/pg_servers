@@ -12,7 +12,134 @@ if [ -f "$ENV_FILE" ]; then
     source "$ENV_FILE"
 fi
 
-# Funkce pro zobrazení nápovědy
+# Funkce pro instalaci PostgreSQL klientů
+install_clients() {
+    echo "📦 Instaluji PostgreSQL klienty pro všechny podporované verze..."
+
+    # Seznam verzí k instalaci
+    local versions=("16" "15" "14" "13" "12")
+
+    # Kontrola, zda jsme na Ubuntu/Debian systému
+    if ! command -v apt-get >/dev/null 2>&1; then
+        echo "❌ Tento skript vyžaduje apt-get (Ubuntu/Debian)"
+        return 1
+    fi
+
+    # Přidání PostgreSQL APT repozitáře pro starší verze
+    echo "🔄 Přidávám PostgreSQL APT repozitář..."
+    if ! grep -q "apt.postgresql.org" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+        echo "📦 Přidávám PostgreSQL repozitář..."
+        sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+        # Přidání klíče
+        curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+
+        echo "🔄 Aktualizuji seznam balíčků..."
+        sudo apt-get update
+    fi
+
+    # Instalace postgresql-client-common
+    echo "📦 Instaluji postgresql-client-common..."
+    sudo apt-get install -y postgresql-client-common
+
+    # Instalace klientů pro každou verzi
+    local installed=0
+    for version in "${versions[@]}"; do
+        echo "📦 Instaluji postgresql-client-$version..."
+        if sudo apt-get install -y "postgresql-client-$version"; then
+            echo "✅ PostgreSQL client $version nainstalován"
+            installed=$((installed + 1))
+        else
+            echo "⚠️  Nepodařilo se nainstalovat postgresql-client-$version"
+        fi
+    done
+
+    echo ""
+    if [ $installed -gt 0 ]; then
+        echo "✅ Instalace dokončena ($installed verzí)"
+        echo "📋 Nainstalované verze:"
+        list_installed_versions
+    else
+        echo "❌ Nepodařilo se nainstalovat žádné PostgreSQL klienty"
+        return 1
+    fi
+}
+
+# Funkce pro zobrazení nainstalovaných verzí
+list_installed_versions() {
+    echo "🔍 Nainstalované PostgreSQL klienty:"
+    echo ""
+
+    local found=false
+    for dir in /usr/lib/postgresql/*; do
+        if [ -d "$dir/bin" ] && [ -f "$dir/bin/psql" ]; then
+            local version=$(basename "$dir")
+            local psql_path="$dir/bin/psql"
+            local psql_version=$($psql_path --version | head -1)
+            echo "  • PostgreSQL $version: $psql_version"
+            found=true
+        fi
+    done
+
+    if [ "$found" = false ]; then
+        echo "  Žádné PostgreSQL klienty nenalezeny"
+        echo "  Spusťte: pgctl install"
+    fi
+}
+
+# Funkce pro nastavení PATH pro specifickou verzi
+set_pg_version() {
+    local version="$1"
+
+    if [ -z "$version" ]; then
+        echo "❌ Chybí verze. Použití: pgctl use <verze>"
+        echo "Dostupné verze: $(list_available_versions)"
+        return 1
+    fi
+
+    local pg_path="/usr/lib/postgresql/$version/bin"
+
+    if [ ! -d "$pg_path" ]; then
+        echo "❌ PostgreSQL $version není nainstalován"
+        echo "Spusťte: pgctl install"
+        return 1
+    fi
+
+    # Odebrání všech PostgreSQL binárek z PATH
+    export PATH=$(echo "$PATH" | sed 's|:/usr/lib/postgresql/[^/]*/bin||g')
+
+    # Přidání požadované verze na začátek PATH
+    export PATH="$pg_path:$PATH"
+
+    echo "✅ Nastavena PostgreSQL verze $version"
+    echo "📍 PATH: $pg_path"
+    echo "🔍 Verze psql: $(psql --version | head -1)"
+}
+
+# Funkce pro získání seznamu dostupných verzí
+list_available_versions() {
+    local versions=""
+    for dir in /usr/lib/postgresql/*; do
+        if [ -d "$dir/bin" ]; then
+            local version=$(basename "$dir")
+            versions="$versions $version"
+        fi
+    done
+    echo "$versions" | sed 's/^ *//'
+}
+
+# Funkce pro zobrazení aktuální verze
+show_current_version() {
+    local psql_path=$(which psql 2>/dev/null)
+    if [ -n "$psql_path" ]; then
+        local version=$(psql --version | head -1)
+        echo "🔍 Aktuální PostgreSQL klient: $version"
+        echo "📍 Cesta: $psql_path"
+    else
+        echo "❌ PostgreSQL klient není v PATH"
+        echo "Spusťte: pgctl use <verze> nebo pgctl install"
+    fi
+}
 show_help() {
     echo "PostgreSQL Control Tool (pgctl)"
     echo ""
@@ -27,10 +154,18 @@ show_help() {
     echo "  pgctl logs <verze>      - Zobrazí logy kontejneru"
     echo "  pgctl up                - Kompletní nastavení (build + start)"
     echo ""
+    echo "  pgctl install           - Nainstaluje PostgreSQL klienty"
+    echo "  pgctl use <verze>       - Nastaví PostgreSQL klienta"
+    echo "  pgctl which             - Zobrazí aktuální verzi klienta"
+    echo "  pgctl clients           - Seznam nainstalovaných klientů"
+    echo ""
     echo "Dostupné verze: 9.5, 9.6, 12, 15, 16"
     echo ""
     echo "Příklady:"
     echo "  pgctl start 9.5         # Spustí PostgreSQL 9.5 na portu 5432"
+    echo "  pgctl install           # Nainstaluje všechny PostgreSQL klienty"
+    echo "  pgctl use 15            # Nastaví PostgreSQL 15 klienta"
+    echo "  pgctl which             # Zobrazí aktuální verzi"
     echo ""
     echo "  pgctl status            # Zobrazí běžící kontejnery"
     echo "  pgctl up                # První spuštění a build custom image"
@@ -215,6 +350,18 @@ case "$1" in
         ;;
     up)
         exec "$PG_SERVERS_ROOT/scripts/pgctl_up"
+        ;;
+    install)
+        install_clients
+        ;;
+    use)
+        set_pg_version "$2"
+        ;;
+    which)
+        show_current_version
+        ;;
+    clients)
+        list_installed_versions
         ;;
     help|--help|-h)
         show_help
