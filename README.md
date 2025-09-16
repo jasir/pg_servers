@@ -11,6 +11,9 @@
 - 💾 **Persistentní data** - Data a konfigurace uloženy na host systému
 - 🔐 **.pgpass integrace** - Centralizovaná správa hesel
 - 🌐 **Různé porty** - Každá verze na vlastním portu
+- 🔧 **PostgreSQL wrappery** - Automatické wrappery pro všechny CLI nástroje
+- 🚀 **Globální dostupnost** - Všechny nástroje dostupné v systémovém PATH
+- 📋 **Kompletní sada nástrojů** - psql, pg_dump, pg_restore, pg_dumpall, createdb, dropdb, createuser, dropuser, vacuumdb, pg_isready, pg_config
 
 ## 📋 Podporované verze
 
@@ -75,6 +78,34 @@ pgctl current
 pgctl logs 16
 ```
 
+### PostgreSQL Wrappery
+
+Po spuštění `pgctl use <verze>` se automaticky vytvoří wrappery pro všechny PostgreSQL nástroje:
+
+```bash
+# Základní nástroje (fungují s aktivní verzí)
+psql --version                    # Zobrazí verzi aktivního PostgreSQL
+pg_dump -h localhost -U postgres  # Backup databáze
+pg_restore -h localhost -U postgres # Obnova backupu
+pg_dumpall -h localhost -U postgres # Backup všech databází
+
+# Správa databází
+createdb test_db                  # Vytvoření databáze
+dropdb test_db                    # Smazání databáze
+createuser new_user               # Vytvoření uživatele
+dropuser old_user                 # Smazání uživatele
+vacuumdb -d test_db -v            # Optimalizace databáze
+
+# Monitorovací nástroje
+pg_isready                        # Kontrola dostupnosti
+pg_config --version               # Informace o konfiguraci
+
+# Všechny wrappery automaticky používají:
+# - Správný port podle aktivní verze
+# - Správný container (pg95, pg96, pg12, pg15, pg16)
+# - Standardní přihlašovací údaje (postgres)
+```
+
 ### Přepínání mezi verzemi
 
 ```bash
@@ -110,6 +141,24 @@ pgctl current
 │   └── 16/
 ├── scripts/                  # Skripty a utility
 └── backups/                  # Zálohy
+
+### 📁 Wrappery a skripty
+
+```
+~/scripts-ai/                      # Adresář v PATH
+├── pgctl                         # Hlavní kontrolní skript
+├── psql -> psql-wrapper           # Symlink na wrapper
+├── pg_dump -> pg_dump-wrapper     # Symlink na wrapper
+├── pg_restore -> pg_restore-wrapper # Symlink na wrapper
+├── pg_dumpall -> pg_dumpall-wrapper # Symlink na wrapper
+├── createdb -> createdb-wrapper   # Symlink na wrapper
+├── dropdb -> dropdb-wrapper       # Symlink na wrapper
+├── createuser -> createuser-wrapper # Symlink na wrapper
+├── dropuser -> dropuser-wrapper   # Symlink na wrapper
+├── vacuumdb -> vacuumdb-wrapper   # Symlink na wrapper
+├── pg_isready -> pg_isready-wrapper # Symlink na wrapper
+├── pg_config -> pg_config-wrapper # Symlink na wrapper
+└── *-wrapper                     # Wrapper skripty (automaticky generované)
 ```
 
 ## 🔧 Konfigurace
@@ -155,12 +204,27 @@ Každá verze má svůj vlastní kontejner s:
 
 ## 🌐 Připojení k databázím
 
-### Pomocí psql
+### Pomocí PostgreSQL wrappery (doporučené)
 
 ```bash
-# Připojení k aktivní verzi
-psql -h localhost -p $PGPORT -U postgres
+# Nastavení verze a automatické wrappery
+pgctl use 12
 
+# Připojení k aktivní verzi pomocí wrapperu
+psql -U postgres                    # Automaticky použije port 5434
+
+# Připojení s jiným uživatelem/databází
+psql -U myuser -d mydb
+
+# Všechny wrappery fungují stejně:
+pg_dump -U postgres > backup.sql
+pg_restore -U postgres -d mydb backup.sql
+createdb -U postgres my_database
+```
+
+### Přímé připojení (manuální specifikace portu)
+
+```bash
 # Připojení ke konkrétní verzi
 psql -h localhost -p 5434 -U postgres  # PostgreSQL 12
 psql -h localhost -p 5437 -U postgres  # PostgreSQL 16
@@ -171,7 +235,7 @@ psql -h localhost -p 5437 -U postgres  # PostgreSQL 16
 ```bash
 # Nastavení verze a připojení
 pgctl use 12
-psql -h localhost -U postgres
+psql -h localhost -U postgres        # Port se nastaví automaticky
 ```
 
 ## 📊 Monitoring
@@ -292,8 +356,9 @@ Pokud migrujete data z Windows PostgreSQL:
 
 - **Docker** a **Docker Compose**
 - **bash** shell
-- **psql** klient
+- **PATH** obsahující `~/scripts-ai/`
 - Uživatel ve `docker` skupině
+- Systémový **psql** klient by neměl být nainstalován (používají se wrappery)
 
 ## 🤝 Contributing
 
