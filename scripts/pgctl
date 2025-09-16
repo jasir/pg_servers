@@ -147,9 +147,10 @@ use_version() {
     echo "✅ Aktivní verze nastavena na PostgreSQL $version"
     echo "📡 PGHOST=localhost, PGPORT=$port, PGUSER=postgres"
     echo ""
-    echo "🔧 Vytvořeny wrappery pro psql a pg_dump"
-    echo "   • psql -> ~/scripts-ai/psql-wrapper"
-    echo "   • pg_dump -> ~/scripts-ai/pg_dump-wrapper"
+    echo "🔧 Vytvořeny wrappery pro PostgreSQL nástroje:"
+    echo "   • psql, pg_dump, pg_restore, pg_dumpall"
+    echo "   • createdb, dropdb, createuser, dropuser"
+    echo "   • vacuumdb, pg_isready, pg_config"
     echo ""
     echo "Pro trvalé nastavení přidej do ~/.bashrc:"
     echo "export PGHOST=localhost"
@@ -162,10 +163,40 @@ create_wrappers() {
     local version="$1"
     local port="$2"
 
-    # Wrapper pro psql
-    cat > "$HOME/scripts-ai/psql-wrapper" << EOF
+    # Seznam všech PostgreSQL nástrojů pro které vytváříme wrappery
+    local tools=(
+        "psql"
+        "pg_dump"
+        "pg_restore"
+        "pg_dumpall"
+        "createdb"
+        "dropdb"
+        "createuser"
+        "dropuser"
+        "vacuumdb"
+        "pg_isready"
+        "pg_config"
+    )
+
+    # Vytvoření wrapperu pro každý nástroj
+    for tool in "${tools[@]}"; do
+        create_single_wrapper "$tool" "$version"
+    done
+
+    echo "✅ Vytvořeny wrappery pro: ${tools[*]}"
+}
+
+# Funkce pro vytvoření jednoho wrapperu
+create_single_wrapper() {
+    local tool="$1"
+    local version="$2"
+    local wrapper_file="$HOME/scripts-ai/${tool}-wrapper"
+    local symlink_file="$HOME/scripts-ai/$tool"
+
+    # Vytvoření wrapperu
+    cat > "$wrapper_file" << EOF
 #!/bin/bash
-# psql wrapper pro PostgreSQL $version
+# $tool wrapper pro PostgreSQL $version
 
 # Načtení aktuální verze
 CURRENT_VERSION="\$(cat "$HOME/pg_servers/.current_version" 2>/dev/null || echo "$version")"
@@ -184,47 +215,27 @@ get_port() {
 
 PORT=\$(get_port "\$CURRENT_VERSION")
 
-# Spuštění psql v kontejneru
-docker exec -i "pg\${CURRENT_VERSION//./}" psql -h localhost -p "\$PORT" -U postgres "\$@"
-EOF
-
-    # Wrapper pro pg_dump
-    cat > "$HOME/scripts-ai/pg_dump-wrapper" << EOF
-#!/bin/bash
-# pg_dump wrapper pro PostgreSQL $version
-
-# Načtení aktuální verze
-CURRENT_VERSION="\$(cat "$HOME/pg_servers/.current_version" 2>/dev/null || echo "$version")"
-
-# Získání portu podle verze
-get_port() {
-    case "\$1" in
-        9.5) echo "5432" ;;
-        9.6) echo "5433" ;;
-        12) echo "5434" ;;
-        15) echo "5435" ;;
-        16) echo "5437" ;;
-        *) echo "5432" ;;
-    esac
-}
-
-PORT=\$(get_port "\$CURRENT_VERSION")
-
-# Spuštění pg_dump v kontejneru
-docker exec -i "pg\${CURRENT_VERSION//./}" pg_dump -h localhost -p "\$PORT" -U postgres "\$@"
+# Speciální případy pro nástroje které nepotřebují parametry připojení
+case "$tool" in
+    pg_config)
+        docker exec -i "pg\${CURRENT_VERSION//./}" pg_config "\$@"
+        ;;
+    pg_isready)
+        docker exec -i "pg\${CURRENT_VERSION//./}" pg_isready -h localhost -p "\$PORT" "\$@"
+        ;;
+    *)
+        # Standardní nástroje s připojením k databázi
+        docker exec -i "pg\${CURRENT_VERSION//./}" $tool -h localhost -p "\$PORT" -U postgres "\$@"
+        ;;
+esac
 EOF
 
     # Nastavení oprávnění
-    chmod +x "$HOME/scripts-ai/psql-wrapper"
-    chmod +x "$HOME/scripts-ai/pg_dump-wrapper"
+    chmod +x "$wrapper_file"
 
-    # Vytvoření symlinků v PATH (pokud neexistují)
-    if [ ! -L "$HOME/scripts-ai/psql" ]; then
-        ln -sf "$HOME/scripts-ai/psql-wrapper" "$HOME/scripts-ai/psql"
-    fi
-
-    if [ ! -L "$HOME/scripts-ai/pg_dump" ]; then
-        ln -sf "$HOME/scripts-ai/pg_dump-wrapper" "$HOME/scripts-ai/pg_dump"
+    # Vytvoření symlinku (pokud neexistuje)
+    if [ ! -L "$symlink_file" ]; then
+        ln -sf "$wrapper_file" "$symlink_file"
     fi
 }
 
