@@ -26,6 +26,7 @@ show_help() {
     echo "  pgctl list              - Seznam dostupných verzí"
     echo "  pgctl current           - Aktuálně aktivní verze"
     echo "  pgctl logs <verze>      - Zobrazí logy kontejneru"
+    echo "  pgctl up                - Kompletní nastavení (build + start)"
     echo ""
     echo "Dostupné verze: 9.5, 9.6, 12, 15, 16"
     echo ""
@@ -33,6 +34,7 @@ show_help() {
     echo "  pgctl start 9.5         # Spustí PostgreSQL 9.5 na portu 5432"
     echo "  pgctl use 12            # Nastaví verzi 12 jako aktivní"
     echo "  pgctl status            # Zobrazí běžící kontejnery"
+    echo "  pgctl up                # První spuštění a build custom image"
 }
 
 # Funkce pro normalizaci verze
@@ -190,7 +192,7 @@ create_wrappers() {
 create_single_wrapper() {
     local tool="$1"
     local version="$2"
-    local wrapper_file="$HOME/scripts-ai/${tool}-wrapper"
+    local wrapper_file="$PG_SERVERS_ROOT/wrappers/${tool}-wrapper"
     local symlink_file="$HOME/scripts-ai/$tool"
 
     # Vytvoření wrapperu
@@ -199,7 +201,7 @@ create_single_wrapper() {
 # $tool wrapper pro PostgreSQL $version
 
 # Načtení aktuální verze
-CURRENT_VERSION="\$(cat "$HOME/pg_servers/.current_version" 2>/dev/null || echo "$version")"
+CURRENT_VERSION="\$(cat "$PG_SERVERS_ROOT/.current_version" 2>/dev/null || echo "$version")"
 
 # Získání portu podle verze
 get_port() {
@@ -349,6 +351,9 @@ case "$1" in
             exit 1
         fi
         show_logs "$2"
+        ;;
+    up)
+        exec "$PG_SERVERS_ROOT/scripts/pgctl_up"
         ;;
     help|--help|-h)
         show_help

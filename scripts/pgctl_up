@@ -1,0 +1,238 @@
+#!/bin/bash
+
+# pgctl_up - PostgreSQL Multi-Version Setup Script
+# Kompletní nastavení PostgreSQL multi-verze prostředí
+
+set -e
+
+PG_SERVERS_ROOT="$HOME/pg_servers"
+DOCKER_DIR="$PG_SERVERS_ROOT/docker"
+COMPOSE_FILE="$DOCKER_DIR/docker-compose.yml"
+ENV_FILE="$PG_SERVERS_ROOT/.env"
+
+# Barvy pro výstup
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Funkce pro výstup s barvou
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Funkce pro kontrolu Dockeru
+check_docker() {
+    log_info "Kontroluji Docker instalaci..."
+
+    if ! command -v docker &> /dev/null; then
+        log_error "Docker není nainstalován!"
+        log_info "Nainstalujte Docker podle návodu: https://docs.docker.com/get-docker/"
+        exit 1
+    fi
+
+    if ! command -v docker compose &> /dev/null; then
+        log_error "Docker Compose není nainstalován!"
+        exit 1
+    fi
+
+    if ! docker info &> /dev/null; then
+        log_error "Docker daemon není spuštěn nebo uživatel nemá oprávnění!"
+        log_info "Spusťte Docker daemon nebo přidejte uživatele do skupiny docker:"
+        log_info "sudo usermod -aG docker \$USER && newgrp docker"
+        exit 1
+    fi
+
+    log_success "Docker a Docker Compose jsou připraveny"
+}
+
+# Funkce pro vytvoření adresářové struktury
+create_directories() {
+    log_info "Vytvářím adresářovou strukturu..."
+
+    # Hlavní adresáře pro každou verzi
+    for version in "9.5" "9.6" "12" "15" "16"; do
+        mkdir -p "$PG_SERVERS_ROOT/versions/$version"/{data,config,logs}
+        log_info "Vytvořeno: versions/$version/{data,config,logs}"
+    done
+
+    # Ostatní adresáře
+    mkdir -p "$PG_SERVERS_ROOT/backups"
+    mkdir -p "$PG_SERVERS_ROOT/wrappers"
+
+    log_success "Adresářová struktura vytvořena"
+}
+
+# Funkce pro kontrolu a vytvoření .env souboru
+setup_env_file() {
+    log_info "Kontroluji .env soubor..."
+
+    if [ ! -f "$ENV_FILE" ]; then
+        log_info "Vytvářím .env soubor s výchozími hesly..."
+        cat > "$ENV_FILE" << EOF
+# PostgreSQL hesla pro jednotlivé verze
+# Upravte podle potřeby pro zvýšení bezpečnosti
+POSTGRES_PASSWORD_95=postgres
+POSTGRES_PASSWORD_96=postgres
+POSTGRES_PASSWORD_12=postgres
+POSTGRES_PASSWORD_15=postgres
+POSTGRES_PASSWORD_16=postgres
+EOF
+        log_warning "Vytvořen .env soubor s výchozími hesly. Zvažte změnu!"
+    else
+        log_success ".env soubor již existuje"
+    fi
+}
+
+# Funkce pro kontrolu a vytvoření .pgpass souboru
+setup_pgpass() {
+    log_info "Kontroluji .pgpass soubor..."
+
+    local pgpass_file="$PG_SERVERS_ROOT/.pgpass"
+
+    if [ ! -f "$pgpass_file" ]; then
+        log_info "Vytvářím .pgpass soubor..."
+        cat > "$pgpass_file" << EOF
+localhost:5432:*:postgres:postgres
+localhost:5433:*:postgres:postgres
+localhost:5434:*:postgres:postgres
+localhost:5435:*:postgres:postgres
+localhost:5437:*:postgres:postgres
+EOF
+        chmod 600 "$pgpass_file"
+        log_success ".pgpass soubor vytvořen"
+    else
+        log_success ".pgpass soubor již existuje"
+    fi
+}
+
+# Funkce pro build custom PostgreSQL 9.5 image
+build_custom_image() {
+    log_info "Builduji custom PostgreSQL 9.5 image s českou locale podporou..."
+
+    local dockerfile="$DOCKER_DIR/Dockerfile.pg95-czech"
+
+    if [ ! -f "$dockerfile" ]; then
+        log_error "Dockerfile.pg95-czech neexistuje!"
+        exit 1
+    fi
+
+    cd "$DOCKER_DIR"
+
+    # Build custom image
+    if docker build -f Dockerfile.pg95-czech -t postgres-czech:9.5 .; then
+        log_success "Custom PostgreSQL 9.5 image úspěšně sestaven"
+    else
+        log_error "Chyba při buildu custom image!"
+        exit 1
+    fi
+}
+
+# Funkce pro spuštění kontejnerů
+start_containers() {
+    log_info "Spouštím PostgreSQL kontejnery..."
+
+    cd "$DOCKER_DIR"
+
+    # Spustit všechny kontejnery
+    if docker compose up -d; then
+        log_success "Všechny PostgreSQL kontejnery spuštěny"
+    else
+        log_error "Chyba při spouštění kontejnerů!"
+        exit 1
+    fi
+}
+
+# Funkce pro kontrolu stavu kontejnerů
+check_containers() {
+    log_info "Kontroluji stav kontejnerů..."
+
+    cd "$DOCKER_DIR"
+
+    # Počkat 10 sekund na spuštění
+    sleep 10
+
+    # Zkontrolovat stav kontejnerů
+    if docker compose ps; then
+        log_success "Kontejnery běží správně"
+    else
+        log_warning "Některé kontejnery nemusí běžet správně"
+    fi
+}
+
+# Funkce pro vytvoření symlinků pro wrappery
+create_symlinks() {
+    log_info "Vytvářím symlinky pro PostgreSQL wrappery..."
+
+    # Vytvořit symlink pro pgctl
+    if [ ! -L "$HOME/scripts-ai/pgctl" ]; then
+        ln -sf "$PG_SERVERS_ROOT/scripts/pgctl" "$HOME/scripts-ai/pgctl"
+        log_info "Vytvořen symlink: pgctl"
+    fi
+
+    # Vytvořit symlinky pro wrappery
+    for tool in psql pg_dump pg_restore pg_dumpall createdb dropdb createuser dropuser vacuumdb pg_isready pg_config; do
+        local symlink_file="$HOME/scripts-ai/$tool"
+        local wrapper_file="$PG_SERVERS_ROOT/wrappers/${tool}-wrapper"
+
+        if [ -f "$wrapper_file" ] && [ ! -L "$symlink_file" ]; then
+            ln -sf "$wrapper_file" "$symlink_file"
+            log_info "Vytvořen symlink: $tool"
+        fi
+    done
+
+    log_success "Symlinky vytvořeny"
+}
+
+# Funkce pro zobrazení dalšího postupu
+show_next_steps() {
+    echo ""
+    log_success "✅ PostgreSQL Multi-Version Manager je připraven!"
+    echo ""
+    echo "🎯 Další kroky:"
+    echo "   1. Nastavte aktivní verzi: pgctl use <verze>"
+    echo "   2. Zkontrolujte stav: pgctl status"
+    echo "   3. Připojte se k databázi: psql -U postgres"
+    echo ""
+    echo "📋 Dostupné verze:"
+    echo "   • PostgreSQL 9.5  (port 5432) - s českou locale"
+    echo "   • PostgreSQL 9.6  (port 5433)"
+    echo "   • PostgreSQL 12   (port 5434)"
+    echo "   • PostgreSQL 15   (port 5435)"
+    echo "   • PostgreSQL 16   (port 5437)"
+    echo ""
+    echo "📚 Další informace: cat $PG_SERVERS_ROOT/README.md"
+}
+
+# Hlavní část skriptu
+main() {
+    echo "🚀 PostgreSQL Multi-Version Setup"
+    echo "================================"
+    echo ""
+
+    check_docker
+    create_directories
+    setup_env_file
+    setup_pgpass
+    build_custom_image
+    start_containers
+    check_containers
+    create_symlinks
+    show_next_steps
+}
+
+# Spuštění hlavní funkce
+main "$@"

@@ -27,6 +27,31 @@
 
 ## 🚀 Installation
 
+### Quick Setup (Recommended)
+
+1. **Clone the repository:**
+   ```bash
+   cd ~/pg_servers
+   git clone <repo-url>
+   ```
+
+2. **Run the setup script:**
+   ```bash
+   cd ~/pg_servers
+   ./scripts/pgctl up
+   ```
+
+This script will:
+- Check Docker installation
+- Create directory structure
+- Build custom PostgreSQL 9.5 image with Czech locale support
+- Start all containers
+- Create symlinks for all PostgreSQL tools
+
+### Manual Setup
+
+If you prefer manual setup:
+
 1. **Clone the repository:**
    ```bash
    cd ~/pg_servers
@@ -35,12 +60,12 @@
 
 2. **Create symbolic link for pgctl:**
    ```bash
-   ln -s ~/pg_servers/scripts-ai/pgctl ~/scripts-ai/pgctl
+   ln -s ~/pg_servers/scripts/pgctl ~/scripts-ai/pgctl
    ```
 
 3. **Set permissions:**
    ```bash
-   chmod +x ~/scripts-ai/pgctl
+   chmod +x ~/pg_servers/scripts/pgctl
    ```
 
 ## 🎮 Usage
@@ -50,6 +75,9 @@
 ```bash
 # Show help
 pgctl help
+
+# Quick setup (first time only)
+pgctl up
 
 # List available versions
 pgctl list
@@ -139,26 +167,39 @@ pgctl current
 │   ├── 12/
 │   ├── 15/
 │   └── 16/
-├── scripts/                  # Scripts and utilities
+├── scripts/                  # Control scripts
+│   ├── pgctl               # Main control script
+│   └── pgctl_up            # Setup script (build + start)
+├── wrappers/                # PostgreSQL tool wrappers
+│   ├── psql-wrapper        # psql wrapper
+│   ├── pg_dump-wrapper     # pg_dump wrapper
+│   ├── pg_restore-wrapper  # pg_restore wrapper
+│   ├── pg_dumpall-wrapper  # pg_dumpall wrapper
+│   ├── createdb-wrapper    # createdb wrapper
+│   ├── dropdb-wrapper      # dropdb wrapper
+│   ├── createuser-wrapper  # createuser wrapper
+│   ├── dropuser-wrapper    # dropuser wrapper
+│   ├── vacuumdb-wrapper    # vacuumdb wrapper
+│   ├── pg_isready-wrapper  # pg_isready wrapper
+│   └── pg_config-wrapper  # pg_config wrapper
 └── backups/                  # Backups
 
-### 📁 Wrappers and Scripts
+### 📁 Symlinks in PATH
 
 ```
 ~/scripts-ai/                      # Directory in PATH
-├── pgctl                         # Main control script
-├── psql -> psql-wrapper           # Symlink to wrapper
-├── pg_dump -> pg_dump-wrapper     # Symlink to wrapper
-├── pg_restore -> pg_restore-wrapper # Symlink to wrapper
-├── pg_dumpall -> pg_dumpall-wrapper # Symlink to wrapper
-├── createdb -> createdb-wrapper   # Symlink to wrapper
-├── dropdb -> dropdb-wrapper       # Symlink to wrapper
-├── createuser -> createuser-wrapper # Symlink to wrapper
-├── dropuser -> dropuser-wrapper   # Symlink to wrapper
-├── vacuumdb -> vacuumdb-wrapper   # Symlink to wrapper
-├── pg_isready -> pg_isready-wrapper # Symlink to wrapper
-├── pg_config -> pg_config-wrapper # Symlink to wrapper
-└── *-wrapper                     # Wrapper scripts (automatically generated)
+├── pgctl -> ~/pg_servers/scripts/pgctl
+├── psql -> ~/pg_servers/wrappers/psql-wrapper
+├── pg_dump -> ~/pg_servers/wrappers/pg_dump-wrapper
+├── pg_restore -> ~/pg_servers/wrappers/pg_restore-wrapper
+├── pg_dumpall -> ~/pg_servers/wrappers/pg_dumpall-wrapper
+├── createdb -> ~/pg_servers/wrappers/createdb-wrapper
+├── dropdb -> ~/pg_servers/wrappers/dropdb-wrapper
+├── createuser -> ~/pg_servers/wrappers/createuser-wrapper
+├── dropuser -> ~/pg_servers/wrappers/dropuser-wrapper
+├── vacuumdb -> ~/pg_servers/wrappers/vacuumdb-wrapper
+├── pg_isready -> ~/pg_servers/wrappers/pg_isready-wrapper
+└── pg_config -> ~/pg_servers/wrappers/pg_config-wrapper
 ```
 
 ## 🔧 Configuration
@@ -359,6 +400,25 @@ If migrating data from Windows PostgreSQL:
 - **PATH** containing `~/scripts-ai/`
 - User in `docker` group
 - System **psql** client should not be installed (wrappers are used)
+
+## 🚀 Quick Start
+
+For first-time setup, simply run:
+
+```bash
+cd ~/pg_servers
+./scripts/pgctl_up
+```
+
+This will:
+- Check Docker installation
+- Create all necessary directories
+- Build custom PostgreSQL 9.5 image with Czech locale support
+- Start all PostgreSQL containers
+- Create symlinks for all PostgreSQL tools
+- Set up environment files
+
+After setup, use `pgctl use <version>` to set your active PostgreSQL version.
 
 ## 🤝 Contributing
 
