@@ -97,27 +97,6 @@ EOF
     fi
 }
 
-# Funkce pro kontrolu a vytvoření .pgpass souboru
-setup_pgpass() {
-    log_info "Kontroluji .pgpass soubor..."
-
-    local pgpass_file="$PG_SERVERS_ROOT/.pgpass"
-
-    if [ ! -f "$pgpass_file" ]; then
-        log_info "Vytvářím .pgpass soubor..."
-        cat > "$pgpass_file" << EOF
-localhost:5432:*:postgres:postgres
-localhost:5433:*:postgres:postgres
-localhost:5434:*:postgres:postgres
-localhost:5435:*:postgres:postgres
-localhost:5437:*:postgres:postgres
-EOF
-        chmod 600 "$pgpass_file"
-        log_success ".pgpass soubor vytvořen"
-    else
-        log_success ".pgpass soubor již existuje"
-    fi
-}
 
 # Funkce pro build custom PostgreSQL 9.5 image
 build_custom_image() {
@@ -226,7 +205,6 @@ main() {
     check_docker
     create_directories
     setup_env_file
-    setup_pgpass
     build_custom_image
     start_containers
     check_containers
